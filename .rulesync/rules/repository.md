@@ -1,3 +1,6 @@
+---
+root: true
+---
 # Job Hunter
 
 Job vacancy monitoring and tracking system. This repository coordinates the n8n,

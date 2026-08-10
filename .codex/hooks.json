@@ -1,7 +1,4 @@
 {
-  "enabledMcpjsonServers": [
-    "n8n"
-  ],
   "hooks": {
     "PreToolUse": [
       {

@@ -1,0 +1,16 @@
+{
+  "name": "job-hunter-agent-config",
+  "private": true,
+  "scripts": {
+    "rulesync:install": "rulesync install --config rulesync.jsonc --frozen",
+    "rulesync:doctor": "rulesync doctor --config rulesync.jsonc --strict",
+    "rulesync:dry-run": "rulesync generate --config rulesync.jsonc --input-root . --output-roots . --dry-run",
+    "rulesync:generate": "rulesync generate --config rulesync.jsonc --input-root . --output-roots .",
+    "rulesync:check": "rulesync generate --config rulesync.jsonc --input-root . --output-roots . --check",
+    "test:hooks": "python3 -m unittest tests/test_no_ai_trailers.py",
+    "rulesync:verify": "npm run rulesync:install && npm run rulesync:doctor && npm run test:hooks && npm run rulesync:check"
+  },
+  "devDependencies": {
+    "rulesync": "16.7.0"
+  }
+}

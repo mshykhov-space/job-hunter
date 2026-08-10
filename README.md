@@ -68,6 +68,19 @@ docker compose up -d    # http://localhost:5678
 - **Web dashboard** — browse, filter, and manage job listings
 - **Self-hosted** — runs on Kubernetes with GitOps (ArgoCD)
 
+## Agent Configuration
+
+`.rulesync/` is the canonical source for repository instructions and hooks.
+`CLAUDE.md`, `AGENTS.md`, and tool-specific configuration are generated projections
+and must not be edited directly.
+
+```bash
+npm ci
+npm run rulesync:dry-run
+npm run rulesync:generate
+npm run rulesync:verify
+```
+
 ## License
 
 MIT

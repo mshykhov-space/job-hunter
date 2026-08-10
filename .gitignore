@@ -31,3 +31,7 @@ Desktop.ini
 !.claude/skills/
 !.claude/skills/**
 !.claude/settings.json
+
+# Agent configuration tooling
+node_modules/
+__pycache__/
