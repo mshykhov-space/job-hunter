@@ -35,3 +35,6 @@ Desktop.ini
 # Agent configuration tooling
 node_modules/
 __pycache__/
+
+# Isolated feature worktrees
+.worktrees/
