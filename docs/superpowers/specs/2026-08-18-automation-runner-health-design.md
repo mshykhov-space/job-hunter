@@ -55,7 +55,10 @@ automation/
 TypeScript on Node.js is the preferred runtime because Playwright and MCP are
 first-class dependencies there. The repository owns execution only. It has no
 business database and does not persist application workflow state. The protected
-persistent Chrome profile is runtime data outside the Git repository.
+persistent Chrome profile is runtime data outside the Git repository. One
+systemd-supervised launcher serializes deterministic probes and Codex canaries;
+each local stdio Browser Runner opens and closes the profile within that critical
+section, so two processes never own it concurrently.
 
 ### `job-hunter-api`
 
@@ -95,8 +98,9 @@ OIDC issuer and subject pair, never by email or a caller-provided user ID.
   dedicated automation scopes, and an exact owner match.
 - The runner uses a short-lived M2M identity bound server-side to the owner's
   automation delegation. Machine payloads cannot select or switch users.
-- Runner machine endpoints are reachable only through the approved private
-  network path. Browser Runner MCP uses local stdio and opens no network listener.
+- Runner machine endpoints use TLS and accept only the dedicated short-lived M2M
+  issuer plus health-reporting scope. Browser Runner MCP uses local stdio and
+  opens no network listener.
 - The persistent Chrome profile is dedicated to automation and may hold the
   owner's authenticated site sessions. Its files, cookies, and credentials never
   enter API payloads, telemetry, probe output, or Git.
@@ -319,7 +323,7 @@ fencing.
 
 ## Rollback
 
-Disable the automation delegation first, then stop and disable the LXD services.
+Disable the automation delegation first, then stop and disable the LXD launcher.
 Revert the UI, API, infrastructure, automation submodule, and parent gitlink
 commits independently. The slice has no application workflow records or external
 submission side effects. Existing scraping, matching, public vacancy pages, and
