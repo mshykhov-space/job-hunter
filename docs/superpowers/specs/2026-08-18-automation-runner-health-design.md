@@ -210,6 +210,7 @@ The API is the only application-metric producer. Initial metric families are:
 - `jobhunter_automation_component_state{component,state}`;
 - `jobhunter_automation_probe_total{probe,outcome,reason}`;
 - `jobhunter_automation_probe_duration_seconds{probe}`;
+- `jobhunter_automation_probe_consecutive_failures{probe}`;
 - `jobhunter_automation_probe_last_success_timestamp_seconds{probe}`;
 - `jobhunter_automation_codex_tokens_total{direction}`.
 
