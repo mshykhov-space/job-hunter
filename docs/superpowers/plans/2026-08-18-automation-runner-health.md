@@ -33,6 +33,7 @@ Use these exact wire values in Kotlin and TypeScript:
 AutomationState: READY, DEGRADED, AUTH_REQUIRED, UNAVAILABLE
 AutomationComponent: LAUNCHER, API, DATABASE, CHROME, PLAYWRIGHT, BROWSER_MCP, JOB_HUNTER_MCP, CODEX
 ProbeType: HEARTBEAT, PREFLIGHT, CODEX
+ProbeOutcome: SUCCESS, FAILURE
 AutomationReason: NONE, API_UNAVAILABLE, DATABASE_UNAVAILABLE, CHROME_UNAVAILABLE,
   PROFILE_UNREADABLE, PLAYWRIGHT_UNAVAILABLE, MCP_UNAVAILABLE,
   CODEX_AUTH_REQUIRED, SITE_AUTH_REQUIRED, CANARY_FAILED, CLOCK_SKEW,
@@ -280,7 +281,9 @@ git commit -m "feat(automation): add streamable MCP transport"
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationComponent.kt`
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationReason.kt`
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/ProbeType.kt`
+- Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/ProbeOutcome.kt`
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationComponentSnapshot.kt`
+- Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationProbeSnapshot.kt`
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationDelegationEntity.kt`
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationRunnerEntity.kt`
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationRunnerTransitionEntity.kt`
@@ -304,8 +307,10 @@ mapOf(
 )
 ```
 
-Reload it, assert JSONB round-trip, assert one delegation per owner, and assert
-one runner per delegation.
+Add a `CODEX` probe snapshot with an allowlisted outcome and reason, duration,
+consecutive-failure count, and last-success timestamp. Reload it, assert both
+JSONB maps round-trip, assert one delegation per owner, and assert one runner per
+delegation.
 
 - [ ] **Step 2: Run the focused test and confirm RED**
 
@@ -344,6 +349,7 @@ CREATE TABLE automation_runners (
     overall_state VARCHAR(32) NOT NULL DEFAULT 'UNAVAILABLE',
     overall_reason VARCHAR(64) NOT NULL DEFAULT 'INVALID_REPORT',
     components JSONB NOT NULL DEFAULT '{}'::jsonb,
+    probes JSONB NOT NULL DEFAULT '{}'::jsonb,
     last_heartbeat_at TIMESTAMPTZ,
     last_preflight_success_at TIMESTAMPTZ,
     last_codex_success_at TIMESTAMPTZ,
@@ -371,11 +377,13 @@ CREATE INDEX idx_automation_runner_transitions_runner_time
 
 - [ ] **Step 4: Implement entities and the thin facade**
 
-Follow the existing UUID `Persistable` and auditing pattern. Store
-`Map<AutomationComponent, AutomationComponentSnapshot>` with
-`@JdbcTypeCode(SqlTypes.JSON)`. `AutomationFacade` owns transactions and exposes
-only `findActiveDelegation`, `saveDelegation`, `findRunner`, `saveRunner`, and
-`appendTransitions`.
+Follow the existing UUID `Persistable` and auditing pattern. Store both
+`Map<AutomationComponent, AutomationComponentSnapshot>` and
+`Map<ProbeType, AutomationProbeSnapshot>` with `@JdbcTypeCode(SqlTypes.JSON)`.
+`AutomationProbeSnapshot` contains only `ProbeOutcome`, `AutomationReason`,
+`durationMillis`, `consecutiveFailures`, and `lastSuccessAt`. `AutomationFacade`
+owns transactions and exposes only `findActiveDelegation`, `saveDelegation`,
+`findRunner`, `saveRunner`, and `appendTransitions`.
 
 - [ ] **Step 5: Run migration and persistence tests**
 
@@ -527,6 +535,7 @@ Expected: all tests pass and `/public/**` behavior is unchanged.
 
 **Files:**
 - Create: `src/main/kotlin/com/mshykhov/jobhunter/infrastructure/metrics/AutomationMetrics.kt`
+- Create: `src/main/kotlin/com/mshykhov/jobhunter/infrastructure/metrics/AutomationMetricsRestorer.kt`
 - Create: `src/test/kotlin/com/mshykhov/jobhunter/infrastructure/metrics/AutomationMetricsTest.kt`
 - Modify: `src/main/kotlin/com/mshykhov/jobhunter/application/automation/AutomationService.kt`
 
@@ -558,10 +567,10 @@ Expected: FAIL because `AutomationMetrics` is missing.
 
 - [ ] **Step 3: Implement metrics with idempotent recording**
 
-Register timestamp/state/failure gauges from atomic values restored from the
-current runner snapshot on application startup. Increment probe and token
-counters only after a new heartbeat sequence commits; duplicate idempotency
-responses do not increment counters.
+Register timestamp/state/duration/failure gauges from atomic values restored from
+the current runner component and probe snapshots on application startup.
+Increment probe and token counters only after a new heartbeat sequence commits;
+duplicate idempotency responses do not increment counters.
 
 Prometheus exposition must produce:
 

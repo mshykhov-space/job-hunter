@@ -116,10 +116,13 @@ automation once.
 ## Health model
 
 The API stores one current snapshot per configured runner. Heartbeats replace the
-current snapshot rather than appending one database record per minute. The
-snapshot contains only stable identifiers, component states, check timestamps,
-the runner generation, probe versions, and a bounded reason code. It contains no
-exception text, prompt, URL, cookie, credential, DOM content, or personal value.
+current snapshot rather than appending one database record per minute. Component
+snapshots and typed probe snapshots are stored in separate JSONB maps. Each probe
+snapshot contains only an allowlisted outcome and reason, duration in
+milliseconds, consecutive-failure count, and last-success timestamp. The runner
+snapshot otherwise contains only stable identifiers, component states, check
+timestamps, the runner generation, and probe versions. It contains no exception
+text, prompt, URL, cookie, credential, DOM content, or personal value.
 An immutable bounded runner-health transition is recorded only when a component
 changes state or recovers, not for every heartbeat. This is operational history,
 not application audit or event sourcing.
@@ -152,9 +155,11 @@ same backend authorization path that issues the claim.
 ### Heartbeat
 
 The launcher sends an authenticated heartbeat every minute. It includes runner
-identity, monotonic generation, launcher version, probe summary, and timestamps.
-The backend rejects stale generations and timestamps outside a small clock-skew
-window. A successful HTTP request alone is not treated as browser readiness.
+identity, monotonic generation, launcher version, typed snapshots for the bounded
+`HEARTBEAT`, `PREFLIGHT`, and `CODEX` probes, and timestamps. Outcomes are bounded
+to `SUCCESS` and `FAILURE`; reasons use the shared reason vocabulary. The backend
+rejects stale generations and timestamps outside a small clock-skew window. A
+successful HTTP request alone is not treated as browser readiness.
 
 ### Deterministic preflight
 
@@ -221,7 +226,7 @@ The API is the only application-metric producer. Initial metric families are:
 The state metric is one-hot: exactly one allowlisted state has value `1` for each
 component and the others have value `0`. All labels use fixed allowlists. Runner
 IDs, user IDs, domains, URLs, profile names, exception messages, model output, and
-personal data are forbidden labels. Unknown reason codes collapse to `other`.
+personal data are forbidden labels. Unknown reason codes collapse to `OTHER`.
 
 ## Alerts
 
