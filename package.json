@@ -7,8 +7,8 @@
     "rulesync:dry-run": "rulesync generate --config rulesync.jsonc --input-root . --output-roots . --dry-run",
     "rulesync:generate": "rulesync generate --config rulesync.jsonc --input-root . --output-roots .",
     "rulesync:check": "rulesync generate --config rulesync.jsonc --input-root . --output-roots . --check",
-    "test:hooks": "python3 -m unittest tests/test_no_ai_trailers.py",
-    "rulesync:verify": "npm run rulesync:install && npm run rulesync:doctor && npm run test:hooks && npm run rulesync:check"
+    "test:repo": "python3 -m unittest discover -s tests",
+    "rulesync:verify": "npm run rulesync:install && npm run rulesync:doctor && npm run test:repo && npm run rulesync:check"
   },
   "devDependencies": {
     "rulesync": "16.7.0"

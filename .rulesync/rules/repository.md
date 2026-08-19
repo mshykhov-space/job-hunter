@@ -4,7 +4,8 @@ root: true
 # Job Hunter
 
 Job vacancy monitoring and tracking system. This repository coordinates the n8n,
-Kotlin API, and React UI service repositories through Git submodules.
+Kotlin API, React UI, and private-runtime automation service repositories through
+Git submodules.
 
 This is a public portfolio project. Keep code, documentation, commits, and
 architecture decisions at professional production quality.
@@ -27,10 +28,13 @@ architecture decisions at professional production quality.
 - `n8n/` owns scraping workflows and sends normalized vacancies to the API.
 - `api/` owns the Kotlin service, persistence, matching, and Telegram delivery.
 - `ui/` owns the React dashboard for exploring and managing vacancies.
-- PostgreSQL owns durable application and workflow state.
+- `automation/` owns browser execution, deterministic probes, and the bounded
+  Codex readiness canary. It must not persist business workflow state.
+- The API and PostgreSQL own all durable application and automation workflow state.
 
 The normal flow is scraper -> REST API -> Kotlin service -> PostgreSQL, Telegram,
-and the web UI.
+and the web UI. Private automation reports health through the API and uses only
+explicit machine capabilities bound to the configured owner.
 
 ## Submodules
 

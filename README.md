@@ -1,30 +1,23 @@
 # Job Hunter
 
-Automated job vacancy monitoring and tracking system. Aggregates listings from multiple platforms, filters by relevance, and delivers them via Telegram bot with a web dashboard for management.
+Automated job vacancy monitoring and tracking system. It aggregates listings from
+multiple platforms, filters by relevance, delivers them through Telegram, and
+provides a web dashboard plus a private single-owner automation runtime.
 
 ## Architecture
 
 ```
-┌─────────────┐   REST    ┌───────────────┐
-│     n8n     │ ────────→ │  Kotlin API   │
-│  (scraping) │           │  Spring Boot  │
-│             │           │               │
-│ • DOU RSS   │           │ • REST API    │
-│ • Djinni †  │           │ • Telegram Bot│
-│ • LinkedIn †│           │ • Job Dedup   │
-│ • Google †  │           │               │
-└─────────────┘           └───────┬───────┘
+┌─────────────┐   REST    ┌───────────────┐   health/MCP   ┌────────────────┐
+│     n8n     │ ────────→ │  Kotlin API   │ ←───────────── │   Automation   │
+│  (scraping) │           │  Spring Boot  │                │ private runner │
+└─────────────┘           └───────┬───────┘                └────────────────┘
                                   │
-                           ┌──────┴──────┐
-                           │ PostgreSQL  │
-                           └──────┬──────┘
-                                  │
-                           ┌──────┴──────┐
-                           │  React UI   │
-                           │  Dashboard  │
-                           └─────────────┘
+                 ┌────────────────┼────────────────┐
+                 ▼                ▼                ▼
+          ┌────────────┐   ┌────────────┐   ┌────────────┐
+          │ PostgreSQL │   │  Telegram  │   │  React UI  │
+          └────────────┘   └────────────┘   └────────────┘
 
-† = planned
 ```
 
 ## Tech Stack
@@ -35,8 +28,9 @@ Automated job vacancy monitoring and tracking system. Aggregates listings from m
 | Backend | Kotlin, Spring Boot 3 |
 | Telegram | [telegram-bot](https://github.com/DEHuckaKpyT/telegram-bot) (Kotlin DSL) |
 | Frontend | React, Vite |
+| Automation | Node.js 24, TypeScript, Playwright, Codex CLI, MCP |
 | Database | PostgreSQL |
-| Deploy | Kubernetes, ArgoCD, Helm |
+| Deploy | Kubernetes, ArgoCD, Helm; dedicated LXD for automation |
 
 ## Project Structure
 
@@ -46,7 +40,12 @@ This is a monorepo that coordinates individual service repositories via Git subm
 |-----------|------------|-------------|
 | `n8n/` | [job-hunter-n8n](https://github.com/mshykhov/job-hunter-n8n) | Scraping workflows (DOU live, Djinni/LinkedIn/Google Jobs planned) |
 | `api/` | [job-hunter-api](https://github.com/mshykhov/job-hunter-api) | Kotlin Spring Boot backend + Telegram bot |
-| `ui/` | job-hunter-ui | React web dashboard (coming soon) |
+| `ui/` | [job-hunter-ui](https://github.com/mshykhov/job-hunter-ui) | React web dashboard |
+| `automation/` | [job-hunter-automation](https://github.com/mshykhov/job-hunter-automation) | Private execution runtime, deterministic health probes, and bounded Codex canary |
+
+The automation repository owns execution only. The API and PostgreSQL remain the
+durable policy and workflow boundary. The current automation slice proves runtime
+health and does not read vacancies, fill forms, or submit applications.
 
 ## Getting Started
 
@@ -66,6 +65,8 @@ docker compose up -d    # http://localhost:5678
 - **Telegram notifications** — instant push with inline action buttons
 - **Job tracking** — mark vacancies as Applied / Irrelevant
 - **Web dashboard** — browse, filter, and manage job listings
+- **Private automation health** — owner-only runner status, deterministic probes,
+  Codex readiness canary, metrics, alerts, and Grafana dashboard
 - **Self-hosted** — runs on Kubernetes with GitOps (ArgoCD)
 
 ## Agent Configuration
