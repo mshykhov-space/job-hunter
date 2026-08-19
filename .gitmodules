@@ -7,3 +7,6 @@
 [submodule "ui"]
 	path = ui
 	url = git@github.com:mshykhov/job-hunter-ui.git
+[submodule "automation"]
+	path = automation
+	url = git@github.com:mshykhov/job-hunter-automation.git
