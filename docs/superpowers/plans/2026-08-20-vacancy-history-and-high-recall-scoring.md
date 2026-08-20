@@ -53,7 +53,7 @@ Expected: both focused baseline suites exit 0.
 ### Task 2: Persist a bounded per-user matching decision ledger
 
 **Files:**
-- Create: `api/src/main/resources/db/migration/V27__add_user_job_group_decisions.sql`
+- Create: `api/src/main/resources/db/migration/V28__add_user_job_group_decisions.sql`
 - Create: `api/src/main/kotlin/com/mshykhov/jobhunter/application/statistics/MatchingDecisionOutcome.kt`
 - Create: `api/src/main/kotlin/com/mshykhov/jobhunter/application/statistics/UserJobGroupDecisionEntity.kt`
 - Create: `api/src/main/kotlin/com/mshykhov/jobhunter/application/statistics/UserJobGroupDecisionRepository.kt`
