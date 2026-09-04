@@ -11,7 +11,7 @@ are verified together.
 | Slice | Status |
 | --- | --- |
 | 0. Runtime health foundation | Complete (2026-09-04) |
-| 1. Durable execution skeleton | Planned |
+| 1. Durable execution skeleton | Complete (2026-09-04) |
 | 2. Browser operations control plane | Planned |
 | 3. Read-only reconnaissance | Planned |
 | 4. Draft preparation | Planned |
@@ -55,10 +55,11 @@ Completion evidence:
 
 Goal: establish recoverable work before adding real browser actions.
 
-- API-owned run, occurrence, work-item, lease, checkpoint, attempt, and event
-  contracts with migrations.
+- API-owned run, work-item, lease, checkpoint, attempt, and event contracts with
+  migrations.
 - Stable idempotency keys, generation fencing, lease expiry, bounded retries, and
-  an append-only audit/outbox.
+  an append-only audit event log. An external outbox remains deferred until a
+  workflow has an external side effect.
 - Runner claim, heartbeat, complete, fail, pause, and resume protocol.
 - Owner UI for queue, active run, attempts, typed failures, and history.
 - Restart tests at each transition, including process death after an API write and
@@ -66,6 +67,30 @@ Goal: establish recoverable work before adding real browser actions.
 
 Exit criteria: a synthetic multi-step job survives API, runner, container, and
 host restarts without losing progress or executing a completed step twice.
+
+Completion evidence:
+
+- API `v0.20.0` owns the PostgreSQL state machine, 60-second leases, three-attempt
+  retry bound, generation fencing, owner and runner contracts, and database-backed
+  workflow metrics.
+- Automation revision `c3f26b1305f2cf73185be8d3421e8cff88a88311` runs the
+  stateless synthetic worker. Service and full LXD restart drills resumed from the
+  next incomplete checkpoint and completed exactly three unique steps.
+- An API pod was replaced through GitOps while work was active; the run and lease
+  remained available from PostgreSQL and completed after the runner resumed.
+- Owner create, pause, resume, and stop controls were exercised in the production
+  UI. Anonymous access returned `401`, the runner identity returned `403`, and
+  wrong-owner denial is covered by integration tests.
+- UI `v0.17.0` presents the actionable queue before diagnostics, polls live state
+  every three to five seconds, separates history, and exposes attempts,
+  checkpoints, integrity digests, and the audit timeline in a responsive owner
+  report. Mobile navigation uses a compact header and temporary drawer instead of
+  reserving a permanent rail. Synthetic runs explicitly show that no vacancy,
+  browser session, screenshot, submission, or schedule exists.
+- A controlled 15-minute stall fired `JobHunterAutomationWorkflowStalled` while
+  the runner heartbeat remained fresh. Telegram delivery completed without an
+  error; restoring normal execution completed both actionable runs, reduced queue
+  and active metrics to zero, and resolved the alert.
 
 ### 2. Browser operations control plane
 
@@ -77,6 +102,15 @@ Goal: expose production-grade browser control without application submission.
 - Allowed-domain and scheme validation, private-network rejection, timeouts,
   cancellation, rate limits, and artifact retention.
 - Live owner view, current step, recent evidence, pause, resume, and stop controls.
+- Run context that identifies the vacancy title, company, source, target URL, and
+  trigger origin when a workflow is vacancy-related. Synthetic runs explicitly
+  show that no vacancy is associated.
+- Distinct scheduled, queued, active, and historical views with visible live-update
+  freshness. Scheduling remains API-owned and appears only after its contract is
+  implemented.
+- Detailed owner reports for attempts, typed outcomes, checkpoints, audit events,
+  screenshots, and retained browser evidence. Integrity hashes are not presented
+  as screenshots.
 - `WAITING_HUMAN` checkpoints for login, CAPTCHA, and ambiguous controls.
 
 Exit criteria: fixture flows are deterministic, owner-visible, fully audited, and
