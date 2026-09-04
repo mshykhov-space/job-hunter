@@ -37,7 +37,7 @@ allows public HTTPS APIs and rejects the Kubernetes pod and service CIDRs.
 | Component | Owns | Must not own |
 | --- | --- | --- |
 | `n8n/` | Source schedules, scraping workflows, extraction, and normalized vacancy delivery | Matching policy, application workflow state, browser sessions, or user authorization |
-| `api/` | Domain rules, PostgreSQL persistence, deduplication, matching, schedules, leases, idempotency, submit fences, audit/outbox, Telegram delivery, and automation authorization | Browser processes, persistent browser profiles, or Codex credentials |
+| `api/` | Domain rules, PostgreSQL persistence, deduplication, matching, schedules, workflow leases, checkpoints, audit events, Telegram delivery, and automation authorization | Browser processes, persistent browser profiles, or Codex credentials |
 | `ui/` | Authenticated operator experience, queries, commands, status, reports, and human checkpoints | Durable workflow decisions, direct database access, or hidden background orchestration |
 | `automation/` | Bounded process execution, deterministic probes, browser control, protected local capability credentials, and ephemeral execution context | Business workflow state, schedules, policy, audit authority, or a second application database |
 | Infrastructure repository | Kubernetes and LXD deployment, secrets delivery, network policy, dashboards, alerts, backups, and recovery procedures | Application policy or business workflow transitions |
@@ -73,10 +73,39 @@ infrastructure is added only for a demonstrated requirement.
 | In-memory timers, page handles, and process context | Automation process | Discarded; a restart resumes only from the next API-owned checkpoint |
 
 The LXD instance starts with the host and systemd restarts the service on failure.
-This does not make an arbitrary browser click resumable. Durable browser and
-application operations require API-owned step checkpoints, leases, and fences.
-Until that contract is implemented, the runtime performs health checks only and
-cannot submit applications.
+The shipped synthetic recovery contract is resumable because every accepted step is
+checkpointed in PostgreSQL before the next step begins. This does not make an
+arbitrary browser click resumable. Real browser and application operations still
+require typed API-owned checkpoints, evidence, and irreversible-action fences; the
+runtime cannot submit applications.
+
+## Durable synthetic workflow
+
+The first durable slice implements one intentionally bounded workflow type:
+`SYNTHETIC_RECOVERY`.
+
+```text
+owner UI -> create run -> API/PostgreSQL queue -> stateless LXD worker
+                                      ^                  |
+                                      +-- lease/checkpoint+
+```
+
+- One run owns one work item and the ordered `PREPARE`, `EXECUTE`, and `VERIFY`
+  checkpoints.
+- A claim creates a 60-second lease and an attempt bound to the current runner
+  generation. A new session fences the old generation and requeues unfinished work.
+- Checkpoint UUIDs make response replay idempotent; the unique step index prevents a
+  completed step from being recorded twice.
+- Pause revokes the lease and can be resumed. Stop revokes the lease and is terminal.
+- Every accepted transition writes a bounded append-only event in the same database
+  transaction. No outbox exists yet because this synthetic workflow has no external
+  side effect.
+- The worker has no workflow database. Process-local timers and execution context are
+  disposable and reconstructed from the next incomplete API-owned checkpoint.
+
+Owner endpoints require `read:automation` or `write:automation` and are additionally
+bound to the configured immutable owner issuer and subject. The runner M2M identity
+can operate only runner endpoints; it cannot read or control owner workflows.
 
 ## Security and privacy
 

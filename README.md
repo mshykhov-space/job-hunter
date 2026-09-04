@@ -44,8 +44,10 @@ This is a monorepo that coordinates individual service repositories via Git subm
 | `automation/` | [job-hunter-automation](https://github.com/mshykhov/job-hunter-automation) | Private execution runtime, deterministic health probes, and bounded Codex canary |
 
 The automation repository owns execution only. The API and PostgreSQL remain the
-durable policy and workflow boundary. The current automation slice proves runtime
-health and does not read vacancies, fill forms, or submit applications.
+durable policy and workflow boundary. The current automation slice provides health
+reporting and a three-step synthetic recovery workflow with API-owned leases,
+checkpoints, history, and owner controls. It does not read vacancy pages, fill forms,
+or submit applications.
 
 ## Documentation
 
@@ -73,6 +75,8 @@ docker compose up -d    # http://localhost:5678
 - **Web dashboard** — browse, filter, and manage job listings
 - **Private automation health** — owner-only runner status, deterministic probes,
   Codex readiness canary, metrics, alerts, and Grafana dashboard
+- **Durable recovery drills** — owner-only queue, progress, attempts, checkpoints,
+  pause/resume/stop controls, restart recovery, and stalled-work alerting
 - **Self-hosted** — runs on Kubernetes with GitOps (ArgoCD)
 
 ## Agent Configuration
