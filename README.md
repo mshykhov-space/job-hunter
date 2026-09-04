@@ -47,6 +47,12 @@ The automation repository owns execution only. The API and PostgreSQL remain the
 durable policy and workflow boundary. The current automation slice proves runtime
 health and does not read vacancies, fill forms, or submit applications.
 
+## Documentation
+
+- [Repository documentation](docs/README.md)
+- [Service boundaries](docs/architecture/service-boundaries.md)
+- [Ordered automation roadmap](docs/backlog/automation-roadmap.md)
+
 ## Getting Started
 
 ```bash
