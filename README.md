@@ -1,97 +1,34 @@
 # Job Hunter
 
-Automated job vacancy monitoring and tracking system. It aggregates listings from
-multiple platforms, filters by relevance, delivers them through Telegram, and
-provides a web dashboard plus a private single-owner automation runtime.
+Job Hunter is a modular system for collecting, matching, and tracking job vacancies. The n8n workflows normalize source data, the Kotlin API owns persistence and matching, and the React UI presents the result.
 
-## Architecture
+## Components
 
-```
-┌─────────────┐   REST    ┌───────────────┐   health/MCP   ┌────────────────┐
-│     n8n     │ ────────→ │  Kotlin API   │ ←───────────── │   Automation   │
-│  (scraping) │           │  Spring Boot  │                │ private runner │
-└─────────────┘           └───────┬───────┘                └────────────────┘
-                                  │
-                 ┌────────────────┼────────────────┐
-                 ▼                ▼                ▼
-          ┌────────────┐   ┌────────────┐   ┌────────────┐
-          │ PostgreSQL │   │  Telegram  │   │  React UI  │
-          └────────────┘   └────────────┘   └────────────┘
+- [job-hunter-api](https://github.com/mshykhov/job-hunter-api) - Kotlin/Spring Boot API, PostgreSQL persistence, matching, and job state.
+- [job-hunter-ui](https://github.com/mshykhov/job-hunter-ui) - React dashboard.
+- [job-hunter-n8n](https://github.com/mshykhov/job-hunter-n8n) - versioned n8n workflow exports.
+- [job-hunter-automation](https://github.com/mshykhov/job-hunter-automation) - a separately configured, bounded runner for health checks and synthetic recovery workflows.
 
-```
+The root repository coordinates these components with Git submodules. It does not start a complete local stack by itself.
 
-## Tech Stack
+## Get the code
 
-| Component | Technology |
-|-----------|------------|
-| Scraping | [n8n](https://n8n.io/) (self-hosted) |
-| Backend | Kotlin, Spring Boot 3 |
-| Telegram | [telegram-bot](https://github.com/DEHuckaKpyT/telegram-bot) (Kotlin DSL) |
-| Frontend | React, Vite |
-| Automation | Node.js 24, TypeScript, Playwright, Codex CLI, MCP |
-| Database | PostgreSQL |
-| Deploy | Kubernetes, ArgoCD, Helm; dedicated LXD for automation |
-
-## Project Structure
-
-This is a monorepo that coordinates individual service repositories via Git submodules:
-
-| Submodule | Repository | Description |
-|-----------|------------|-------------|
-| `n8n/` | [job-hunter-n8n](https://github.com/mshykhov/job-hunter-n8n) | Scraping workflows (DOU live, Djinni/LinkedIn/Google Jobs planned) |
-| `api/` | [job-hunter-api](https://github.com/mshykhov/job-hunter-api) | Kotlin Spring Boot backend + Telegram bot |
-| `ui/` | [job-hunter-ui](https://github.com/mshykhov/job-hunter-ui) | React web dashboard |
-| `automation/` | [job-hunter-automation](https://github.com/mshykhov/job-hunter-automation) | Private execution runtime, deterministic health probes, and bounded Codex canary |
-
-The automation repository owns execution only. The API and PostgreSQL remain the
-durable policy and workflow boundary. The current automation slice provides health
-reporting and a three-step synthetic recovery workflow with API-owned leases,
-checkpoints, history, and owner controls. It does not read vacancy pages, fill forms,
-or submit applications.
-
-## Documentation
-
-- [Repository documentation](docs/README.md)
-- [Service boundaries](docs/architecture/service-boundaries.md)
-- [Ordered automation roadmap](docs/backlog/automation-roadmap.md)
-
-## Getting Started
-
-```bash
-# Clone with submodules
-git clone --recurse-submodules git@github.com:mshykhov/job-hunter.git
-
-# Start n8n locally
-cd n8n
-cp .env.example .env    # fill in values
-docker compose up -d    # http://localhost:5678
+```sh
+git clone --recurse-submodules https://github.com/mshykhov/job-hunter.git
+cd job-hunter
+git submodule update --init --recursive
 ```
 
-## Features
+Follow the README in each component for its local setup. The automation component needs a separately configured API and credentials; it does not browse vacancies or submit applications.
 
-- **Multi-source scraping** — DOU, Djinni, LinkedIn, Google Jobs (extensible)
-- **Telegram notifications** — instant push with inline action buttons
-- **Job tracking** — mark vacancies as Applied / Irrelevant
-- **Web dashboard** — browse, filter, and manage job listings
-- **Private automation health** — owner-only runner status, deterministic probes,
-  Codex readiness canary, metrics, alerts, and Grafana dashboard
-- **Durable recovery drills** — owner-only queue, progress, attempts, checkpoints,
-  pause/resume/stop controls, restart recovery, and stalled-work alerting
-- **Self-hosted** — runs on Kubernetes with GitOps (ArgoCD)
+## Start here
 
-## Agent Configuration
+1. For a UI preview without credentials or services, follow `npm run dev:mock` in [the UI](https://github.com/mshykhov/job-hunter-ui#run-locally).
+2. For a local API and UI, start PostgreSQL and the API using the [API guide](https://github.com/mshykhov/job-hunter-api#run-locally), then start the UI against port 8095.
+3. Add [n8n](https://github.com/mshykhov/job-hunter-n8n#run-locally) when you want to ingest real sources. Configure its API URL and credentials before activating workflows.
 
-`.rulesync/` is the canonical source for repository instructions and hooks.
-`CLAUDE.md`, `AGENTS.md`, and tool-specific configuration are generated projections
-and must not be edited directly.
-
-```bash
-npm ci
-npm run rulesync:dry-run
-npm run rulesync:generate
-npm run rulesync:verify
-```
+See [service boundaries](docs/architecture/service-boundaries.md) and the [documentation map](docs/README.md) for the architecture.
 
 ## License
 
-MIT
+[MIT](LICENSE)
