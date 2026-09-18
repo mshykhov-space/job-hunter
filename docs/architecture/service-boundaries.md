@@ -13,9 +13,10 @@ databases, copied business logic, or direct access to another service's runtime.
 vacancy sources
       |
       v
- n8n scraping workflows
+ Kotlin scraper -------------------> JobSpy sidecar (LinkedIn only)
       |
-      | normalized REST payloads
+      | claims, heartbeats, normalized batches,
+      | checkpoints, completion, and failure
       v
  Kotlin API  <------------------- private automation runtime
       |                              | health, claims, heartbeats,
@@ -28,6 +29,11 @@ vacancy sources
       +----------> React UI
 ```
 
+The Kotlin scraper is the target ingestion runtime, but it is disabled until
+production acceptance and per-source cutover. Existing n8n workflows remain the
+temporary ingestion owner for sources that have not cut over. A source must never
+be active in both runtimes.
+
 The API is the only business-state boundary. The automation runtime never reads
 PostgreSQL, Kubernetes services, Vault, or VictoriaMetrics directly. Its network
 allows public HTTPS APIs and rejects the Kubernetes pod and service CIDRs.
@@ -36,19 +42,24 @@ allows public HTTPS APIs and rejects the Kubernetes pod and service CIDRs.
 
 | Component | Owns | Must not own |
 | --- | --- | --- |
-| `n8n/` | Source schedules, scraping workflows, extraction, and normalized vacancy delivery | Matching policy, application workflow state, browser sessions, or user authorization |
-| `api/` | Domain rules, PostgreSQL persistence, deduplication, matching, schedules, workflow leases, checkpoints, audit events, Telegram delivery, and automation authorization | Browser processes, persistent browser profiles, or Codex credentials |
+| Kotlin scraper | Source adapters, bounded extraction, page traversal, lease heartbeats, and normalized batch delivery | Durable schedules, checkpoints, retry state, vacancy persistence, matching policy, or a service database |
+| JobSpy sidecar | LinkedIn extraction behind the scraper's private runtime boundary | Scheduling, API credentials, durable state, or non-LinkedIn sources |
+| `n8n/` | Temporary legacy extraction and delivery for sources not yet cut over | A source already enabled in the Kotlin scraper, matching policy, application workflow state, browser sessions, or user authorization |
+| `api/` | Domain rules, PostgreSQL persistence, deduplication, matching, scraper schedules, fenced leases, criteria snapshots, checkpoints, idempotent batch receipts, audit events, Telegram delivery, and automation authorization | Source HTTP extraction, browser processes, persistent browser profiles, or Codex credentials |
 | `ui/` | Authenticated operator experience, queries, commands, status, reports, and human checkpoints | Durable workflow decisions, direct database access, or hidden background orchestration |
 | `automation/` | Bounded process execution, deterministic probes, browser control, protected local capability credentials, and ephemeral execution context | Business workflow state, schedules, policy, audit authority, or a second application database |
-| Infrastructure repository | Kubernetes and LXD deployment, secrets delivery, network policy, dashboards, alerts, backups, and recovery procedures | Application policy or business workflow transitions |
+| Infrastructure repository | GitOps deployment, environment and secret delivery, JobSpy sidecar wiring, network policy, trace export configuration, dashboards, alerts, backups, and recovery procedures | Application policy or business workflow transitions |
 
-Logical source and ATS adapters live behind the automation runtime contract. They
-do not become separate microservices until isolation, scaling, or release cadence
-provides a measured reason for another deployable unit.
+Source adapters remain modules inside the scraper. ATS and application adapters
+remain behind the automation runtime contract. An adapter becomes another
+deployable unit only when isolation, scaling, or release cadence provides a
+measured reason.
 
 ## Dependency rules
 
-1. Scrapers submit normalized vacancies to the API.
+1. The scraper claims due work from the API and submits normalized vacancies in
+   idempotent batches. It advances a checkpoint only after the final batch for a
+   page is acknowledged.
 2. UI and Telegram consume API-owned state and commands.
 3. Automation obtains short-lived M2M tokens, then uses only explicit API and MCP
    capabilities bound to the configured owner.
@@ -57,6 +68,8 @@ provides a measured reason for another deployable unit.
 5. Services never share tables or reach into another service's container.
 6. Contracts are versioned at the boundary and deployed compatibly before a
    caller starts using them.
+7. GitOps enables scraper sources explicitly. The default source allowlist is
+   empty, and a corresponding n8n schedule is stopped before a source is enabled.
 
 These rules keep dependencies directed and support SOLID, DRY, and YAGNI:
 business policy has one owner, execution adapters have narrow interfaces, and new
@@ -66,7 +79,8 @@ infrastructure is added only for a demonstrated requirement.
 
 | State | Source of truth | Restart behavior |
 | --- | --- | --- |
-| Vacancies, matching, preferences, schedules, workflow runs, work items, leases, fences, audit, and reports | API and PostgreSQL | Reconstructed from PostgreSQL; expired leases are reclaimed through explicit policy |
+| Vacancies, matching, preferences, scraper schedules, scrape runs, criteria snapshots, checkpoints, batch receipts, workflow runs, work items, leases, fences, audit, and reports | API and PostgreSQL | Reconstructed from PostgreSQL; expired leases are reclaimed through explicit bounded policy |
+| Source page traversal, HTTP clients, and batch assembly | Scraper process | Discarded; the next claim resumes from the API-owned checkpoint and repeats acknowledged batches safely |
 | Runner generation, heartbeat sequence, component snapshots, and delegation | API and PostgreSQL | A restarted runner opens a new fenced session; stale generations cannot write |
 | Browser profile and interactive login session | Dedicated LXD state volume | Preserved across service and container restarts; validity is checked before work |
 | Codex CLI credentials | Dedicated runner state with mode `0600` | Preserved across ephemeral runs; authentication failure becomes a typed health state |
@@ -78,6 +92,20 @@ checkpointed in PostgreSQL before the next step begins. This does not make an
 arbitrary browser click resumable. Real browser and application operations still
 require typed API-owned checkpoints, evidence, and irreversible-action fences; the
 runtime cannot submit applications.
+
+## Deployment and observability
+
+The infrastructure repository is the deployment source of truth. GitOps supplies
+environment-specific endpoints, source allowlists, resource limits, and secret
+references; application repositories contain no environment credentials. The
+scraper uses a scoped machine identity for the API and runs JobSpy as a private
+LinkedIn-only sidecar.
+
+The API exposes durable per-source success, failure, enablement, and volume
+metrics. Scraper and API traces go directly over OTLP/HTTP to the existing
+VictoriaTraces endpoint with bounded export timeouts; no collector or trace-backed
+business state is introduced. Source enablement, freshness alerts, logs, and
+stored traces must be observed before an n8n workflow is retired.
 
 ## Durable synthetic workflow
 
@@ -145,6 +173,12 @@ modes, and rollback. A workflow engine may coordinate execution, but PostgreSQL
 remains the business record unless a separate migration is explicitly approved.
 
 ## Legacy removal rule
+
+The dedicated n8n ingestion repository and gitlink remain during migration. Retire
+them only after every source has passed live acceptance, the Kotlin scraper is the
+sole enabled ingestion owner, API source metrics are fresh, traces are stored, and
+rollback revisions are recorded. This document does not claim that production
+cutover is complete.
 
 Legacy code can be removed after all real consumers are identified, replacement
 contracts are deployed, data migration or retention is complete, observability

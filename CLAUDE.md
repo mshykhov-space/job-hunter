@@ -1,8 +1,8 @@
 # Job Hunter
 
-Job vacancy monitoring and tracking system. This repository coordinates the n8n,
-Kotlin API, React UI, and private-runtime automation service repositories through
-Git submodules.
+Job vacancy monitoring and tracking system. This repository coordinates the
+Kotlin scraper, Kotlin API, React UI, temporary legacy n8n workflows, and private
+automation runtime.
 
 This is a public portfolio project. Keep code, documentation, commits, and
 architecture decisions at professional production quality.
@@ -22,16 +22,27 @@ architecture decisions at professional production quality.
 
 ## Components
 
-- `n8n/` owns scraping workflows and sends normalized vacancies to the API.
-- `api/` owns the Kotlin service, persistence, matching, and Telegram delivery.
+- The Kotlin scraper owns stateless source adapters and bounded extraction. Its
+  LinkedIn adapter uses a private JobSpy sidecar.
+- `api/` owns PostgreSQL persistence, scraper schedules, fenced leases, criteria
+  snapshots, checkpoints, idempotent ingest, matching, and Telegram delivery.
+- `n8n/` is temporary legacy ingestion until every source completes cutover. Keep
+  exactly one active ingestion owner per source.
 - `ui/` owns the React dashboard for exploring and managing vacancies.
 - `automation/` owns browser execution, deterministic probes, and the bounded
   Codex readiness canary. It must not persist business workflow state.
-- The API and PostgreSQL own all durable application and automation workflow state.
+- The infrastructure repository owns GitOps deployment, environment and secret
+  delivery, the JobSpy sidecar, network policy, alerts, dashboards, and direct
+  OTLP/HTTP trace export to VictoriaTraces.
+- The API and PostgreSQL own all durable application, scraping, and automation
+  workflow state.
 
-The normal flow is scraper -> REST API -> Kotlin service -> PostgreSQL, Telegram,
-and the web UI. Private automation reports health through the API and uses only
-explicit machine capabilities bound to the configured owner.
+The target flow is source -> Kotlin scraper -> REST API -> PostgreSQL, Telegram,
+and the web UI. The scraper is disabled by default and resumes only from API-owned
+checkpoints. n8n remains until live per-source acceptance proves cutover; do not
+describe migration as complete before production evidence. Private automation
+reports health through the API and uses only explicit machine capabilities bound
+to the configured owner.
 
 ## Submodules
 
