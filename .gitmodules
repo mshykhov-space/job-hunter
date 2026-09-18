@@ -10,3 +10,6 @@
 [submodule "automation"]
 	path = automation
 	url = https://github.com/mshykhov/job-hunter-automation.git
+[submodule "scraper"]
+	path = scraper
+	url = https://github.com/mshykhov/job-hunter-scraper.git
