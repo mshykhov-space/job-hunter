@@ -1,6 +1,3 @@
-[submodule "n8n"]
-	path = n8n
-	url = https://github.com/mshykhov/job-hunter-n8n.git
 [submodule "api"]
 	path = api
 	url = https://github.com/mshykhov/job-hunter-api.git

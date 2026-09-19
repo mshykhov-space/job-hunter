@@ -29,10 +29,10 @@ vacancy sources
       +----------> React UI
 ```
 
-The Kotlin scraper is the target ingestion runtime, but it is disabled until
-production acceptance and per-source cutover. Existing n8n workflows remain the
-temporary ingestion owner for sources that have not cut over. A source must never
-be active in both runtimes.
+The Kotlin scraper owns production ingestion for all eight sources. Each new run
+uses a one-hour lookback; source date precision is documented in the scraper.
+Different sources run independently. PostgreSQL leases prevent overlapping runs
+of the same source, and the next scheduled run is due 15 minutes after completion.
 
 The API is the only business-state boundary. The automation runtime never reads
 PostgreSQL, Kubernetes services, Vault, or VictoriaMetrics directly. Its network
@@ -44,7 +44,6 @@ allows public HTTPS APIs and rejects the Kubernetes pod and service CIDRs.
 | --- | --- | --- |
 | Kotlin scraper | Source adapters, bounded extraction, page traversal, lease heartbeats, and normalized batch delivery | Durable schedules, checkpoints, retry state, vacancy persistence, matching policy, or a service database |
 | JobSpy sidecar | LinkedIn extraction behind the scraper's private runtime boundary | Scheduling, API credentials, durable state, or non-LinkedIn sources |
-| `n8n/` | Temporary legacy extraction and delivery for sources not yet cut over | A source already enabled in the Kotlin scraper, matching policy, application workflow state, browser sessions, or user authorization |
 | `api/` | Domain rules, PostgreSQL persistence, deduplication, matching, scraper schedules, fenced leases, criteria snapshots, checkpoints, idempotent batch receipts, audit events, Telegram delivery, and automation authorization | Source HTTP extraction, browser processes, persistent browser profiles, or Codex credentials |
 | `ui/` | Authenticated operator experience, queries, commands, status, reports, and human checkpoints | Durable workflow decisions, direct database access, or hidden background orchestration |
 | `automation/` | Bounded process execution, deterministic probes, browser control, protected local capability credentials, and ephemeral execution context | Business workflow state, schedules, policy, audit authority, or a second application database |
@@ -68,8 +67,8 @@ measured reason.
 5. Services never share tables or reach into another service's container.
 6. Contracts are versioned at the boundary and deployed compatibly before a
    caller starts using them.
-7. GitOps enables scraper sources explicitly. The default source allowlist is
-   empty, and a corresponding n8n schedule is stopped before a source is enabled.
+7. GitOps enables scraper sources explicitly. The default API source allowlist is
+   empty. There is one active ingestion owner per source.
 
 These rules keep dependencies directed and support SOLID, DRY, and YAGNI:
 business policy has one owner, execution adapters have narrow interfaces, and new
@@ -174,11 +173,10 @@ remains the business record unless a separate migration is explicitly approved.
 
 ## Legacy removal rule
 
-The dedicated n8n ingestion repository and gitlink remain during migration. Retire
-them only after every source has passed live acceptance, the Kotlin scraper is the
-sole enabled ingestion owner, API source metrics are fresh, traces are stored, and
-rollback revisions are recorded. This document does not claim that production
-cutover is complete.
+The dedicated n8n runtime and gitlink have been retired after per-source
+production acceptance. Its repositories are archived; verified configuration and
+database backups and GitOps revisions provide rollback. The legacy database is
+retained separately from the removed workload. The shared platform n8n is unrelated.
 
 Legacy code can be removed after all real consumers are identified, replacement
 contracts are deployed, data migration or retention is complete, observability

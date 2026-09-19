@@ -1,7 +1,7 @@
 # Job Hunter
 
 Job vacancy monitoring and tracking system. This repository coordinates the
-Kotlin scraper, Kotlin API, React UI, temporary legacy n8n workflows, and private
+Kotlin scraper, Kotlin API, React UI, and private
 automation runtime.
 
 This is a public portfolio project. Keep code, documentation, commits, and
@@ -26,8 +26,6 @@ architecture decisions at professional production quality.
   LinkedIn adapter uses a private JobSpy sidecar.
 - `api/` owns PostgreSQL persistence, scraper schedules, fenced leases, criteria
   snapshots, checkpoints, idempotent ingest, matching, and Telegram delivery.
-- `n8n/` is temporary legacy ingestion until every source completes cutover. Keep
-  exactly one active ingestion owner per source.
 - `ui/` owns the React dashboard for exploring and managing vacancies.
 - `automation/` owns browser execution, deterministic probes, and the bounded
   Codex readiness canary. It must not persist business workflow state.
@@ -37,10 +35,9 @@ architecture decisions at professional production quality.
 - The API and PostgreSQL own all durable application, scraping, and automation
   workflow state.
 
-The target flow is source -> Kotlin scraper -> REST API -> PostgreSQL, Telegram,
+The flow is source -> Kotlin scraper -> REST API -> PostgreSQL, Telegram,
 and the web UI. The scraper is disabled by default and resumes only from API-owned
-checkpoints. n8n remains until live per-source acceptance proves cutover; do not
-describe migration as complete before production evidence. Private automation
+checkpoints. Keep one active run per source through API-owned leases. Private automation
 reports health through the API and uses only explicit machine capabilities bound
 to the configured owner.
 
