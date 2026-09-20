@@ -175,8 +175,8 @@ remains the business record unless a separate migration is explicitly approved.
 
 The dedicated n8n runtime and gitlink have been retired after per-source
 production acceptance. Its repositories are archived; verified configuration and
-database backups and GitOps revisions provide rollback. The legacy database is
-retained separately from the removed workload. The shared platform n8n is unrelated.
+database backups and GitOps revisions provide rollback. The legacy database runtime
+has also been removed from the cluster. The shared platform n8n is unrelated.
 
 Legacy code can be removed after all real consumers are identified, replacement
 contracts are deployed, data migration or retention is complete, observability
