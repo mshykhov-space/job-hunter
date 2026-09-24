@@ -7,17 +7,17 @@ the result.
 
 ## Components
 
-- [job-hunter-api](https://github.com/mshykhov/job-hunter-api) - Kotlin/Spring Boot API, PostgreSQL persistence, scraper schedules, fenced leases, checkpoints, idempotent ingest, matching, and job state.
-- [job-hunter-scraper](https://github.com/mshykhov/job-hunter-scraper) - stateless Kotlin source adapters and execution runtime. LinkedIn extraction uses a narrow JobSpy sidecar.
-- [job-hunter-ui](https://github.com/mshykhov/job-hunter-ui) - React dashboard.
-- [job-hunter-automation](https://github.com/mshykhov/job-hunter-automation) - a separately configured, bounded runner for health checks and synthetic recovery workflows.
+- [job-hunter-api](https://github.com/mshykhov-space/job-hunter-api) - Kotlin/Spring Boot API, PostgreSQL persistence, scraper schedules, fenced leases, checkpoints, idempotent ingest, matching, and job state.
+- [job-hunter-scraper](https://github.com/mshykhov-space/job-hunter-scraper) - stateless Kotlin source adapters and execution runtime. LinkedIn extraction uses a narrow JobSpy sidecar.
+- [job-hunter-ui](https://github.com/mshykhov-space/job-hunter-ui) - React dashboard.
+- [job-hunter-automation](https://github.com/mshykhov-space/job-hunter-automation) - a separately configured, bounded runner for health checks and synthetic recovery workflows.
 
 The root repository coordinates these components with Git submodules. It does not start a complete local stack by itself.
 
 ## Get the code
 
 ```sh
-git clone --recurse-submodules https://github.com/mshykhov/job-hunter.git
+git clone --recurse-submodules https://github.com/mshykhov-space/job-hunter.git
 cd job-hunter
 git submodule update --init --recursive
 ```
@@ -26,9 +26,9 @@ Follow the README in each component for its local setup. The automation componen
 
 ## Start here
 
-1. For a UI preview without credentials or services, follow `npm run dev:mock` in [the UI](https://github.com/mshykhov/job-hunter-ui#run-locally).
-2. For a local API and UI, start PostgreSQL and the API using the [API guide](https://github.com/mshykhov/job-hunter-api#run-locally), then start the UI against port 8095.
-3. Start [the scraper](https://github.com/mshykhov/job-hunter-scraper#run-locally) with its API URL and machine credentials. Enable the desired sources in the API and scraper configuration.
+1. For a UI preview without credentials or services, follow `npm run dev:mock` in [the UI](https://github.com/mshykhov-space/job-hunter-ui#run-locally).
+2. For a local API and UI, start PostgreSQL and the API using the [API guide](https://github.com/mshykhov-space/job-hunter-api#run-locally), then start the UI against port 8095.
+3. Start [the scraper](https://github.com/mshykhov-space/job-hunter-scraper#run-locally) with its API URL and machine credentials. Enable the desired sources in the API and scraper configuration.
 
 The scraper ships disabled by default. Production runs all eight sources through
 GitOps configuration. Each new run collects the last hour, with source-specific

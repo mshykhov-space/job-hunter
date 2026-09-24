@@ -1,12 +1,12 @@
 [submodule "api"]
 	path = api
-	url = https://github.com/mshykhov/job-hunter-api.git
+	url = https://github.com/mshykhov-space/job-hunter-api.git
 [submodule "ui"]
 	path = ui
-	url = https://github.com/mshykhov/job-hunter-ui.git
+	url = https://github.com/mshykhov-space/job-hunter-ui.git
 [submodule "automation"]
 	path = automation
-	url = https://github.com/mshykhov/job-hunter-automation.git
+	url = https://github.com/mshykhov-space/job-hunter-automation.git
 [submodule "scraper"]
 	path = scraper
-	url = https://github.com/mshykhov/job-hunter-scraper.git
+	url = https://github.com/mshykhov-space/job-hunter-scraper.git

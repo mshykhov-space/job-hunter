@@ -49,7 +49,7 @@ to the configured owner.
 Clone with:
 
 ```sh
-git clone --recurse-submodules git@github.com:mshykhov/job-hunter.git
+git clone --recurse-submodules git@github.com:mshykhov-space/job-hunter.git
 ```
 
 Update intentionally with `git submodule update --remote --merge`. When adding a

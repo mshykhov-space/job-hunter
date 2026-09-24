@@ -96,7 +96,7 @@ class AutomationContractTest(unittest.TestCase):
             config["submodule \"automation\""]["path"],
         )
         self.assertEqual(
-            "https://github.com/mshykhov/job-hunter-automation.git",
+            "https://github.com/mshykhov-space/job-hunter-automation.git",
             config["submodule \"automation\""]["url"],
         )
 
