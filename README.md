@@ -36,6 +36,10 @@ date precision documented in the scraper. Sources run independently; PostgreSQL
 leases prevent overlapping runs of the same source. The next scheduled run is due
 15 minutes after completion. Legacy n8n workflows are archived.
 
+To check LinkedIn search filters without waiting for a scheduled run, use the
+[one-shot scraper probe](scraper/README.md#one-shot-linkedin-search-probe). It
+returns a bounded public sample without ingesting jobs or changing checkpoints.
+
 See [service boundaries](docs/architecture/service-boundaries.md) and the [documentation map](docs/README.md) for the architecture.
 
 ## License
